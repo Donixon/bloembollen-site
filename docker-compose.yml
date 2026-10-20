@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      COORD_DECIMALS: ${COORD_DECIMALS:-2}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-15}
+    volumes:
+      - bloembollen-data:/data
+    restart: unless-stopped
+
+volumes:
+  bloembollen-data:

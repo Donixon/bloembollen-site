@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1e4d2b">
+  <title>De bollen van oma – bloembollen op de kaart</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%B7%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="vendor/markercluster/MarkerCluster.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script defer src="vendor/leaflet/leaflet.js"></script>
+  <script defer src="vendor/markercluster/leaflet.markercluster.js"></script>
+  <script defer src="js/app.js"></script>
+  <script defer src="vendor/alpine/alpine.min.js"></script>
+</head>
+<body x-data="bollen" @keydown.escape.window="onEscape()" @hashchange.window="if (location.hash === '#delen') openForm()">
+  <a class="skip" href="#delen" @click.prevent="openForm()">Naar het formulier</a>
+
+  <header class="topbar">
+    <div class="wrap topbar-in">
+      <div class="topbar-text">
+        <h1>De bollen van oma</h1>
+        <p class="tagline">Foto’s van bollen door heel Nederland</p>
+      </div>
+      <button type="button" class="btn btn-big btn-share" x-ref="opener" aria-haspopup="dialog" @click="openForm()">
+        Deel jouw bloembol
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section id="kaart" class="section-map" aria-labelledby="kaart-kop">
+      <div class="wrap">
+        <h2 id="kaart-kop" class="sr-only">Kaart van Nederland</h2>
+
+        <div class="thanks" x-show="success" x-cloak role="status">
+          <p class="thanks-text">
+            <strong x-text="'Bedankt, ' + (success ? success.name : '') + '!'"></strong>
+            <span x-show="success && success.post">Je foto staat nu op de kaart en in de lijst hieronder.</span>
+          </p>
+          <p class="actions">
+            <button type="button" class="btn btn-small" x-show="success && success.post" @click="focusOnMap(success.post.id)">
+              Bekijk op de kaart
+            </button>
+            <button type="button" class="btn btn-light btn-small" @click="openForm()">Nog een foto delen</button>
+            <button type="button" class="btn btn-light btn-small" @click="success = null">Sluiten</button>
+          </p>
+        </div>
+
+        <p class="muted map-hint" x-show="!mapError" x-text="mapCount === 0 && mapLoaded ? 'Er staan nog geen plekken op de kaart.' : 'Tik op een speld om de foto te zien.'"></p>
+        <p class="notice error-box" x-show="mapError" x-cloak>
+          <span x-text="mapError"></span>
+          <button type="button" class="btn btn-light" @click="loadMap()">Probeer opnieuw</button>
+        </p>
+        <div id="hoofd-kaart" class="map map-main" x-ref="mainMap" role="application"
+             aria-label="Kaart van Nederland met alle foto's"></div>
+      </div>
+    </section>
+
+    <section id="galerij" class="section" aria-labelledby="galerij-kop">
+      <div class="wrap">
+        <h2 id="galerij-kop">Alle foto's</h2>
+
+        <p class="empty" x-show="postsLoaded && posts.length === 0 && !postsError" x-cloak>
+          Nog geen foto's — wees de eerste!
+        </p>
+
+        <ul class="grid" x-show="posts.length > 0" x-cloak>
+          <template x-for="p in posts" :key="p.id">
+            <li class="card">
+              <button type="button" class="card-photo" @click="openLightbox(p)"
+                      :aria-label="'Bekijk de foto van ' + p.name + ' groter'">
+                <img :src="p.thumb_url" :alt="'Foto van ' + p.name" loading="lazy" width="480" height="360">
+              </button>
+              <div class="card-body">
+                <h3 x-text="p.name"></h3>
+                <p class="date muted" x-text="formatDate(p.created_at)"></p>
+                <p class="card-text" x-show="p.message" x-text="p.message"></p>
+                <button type="button" class="btn btn-light btn-small" @click="focusOnMap(p.id)">Toon op de kaart</button>
+              </div>
+            </li>
+          </template>
+        </ul>
+
+        <p class="notice error-box" x-show="postsError" x-cloak>
+          <span x-text="postsError"></span>
+        </p>
+
+        <p class="center" x-show="postsLoading" x-cloak>Even laden…</p>
+        <p class="center" x-show="nextBeforeId !== null || postsError" x-cloak>
+          <button type="button" class="btn" @click="loadPosts()" :disabled="postsLoading">
+            <span x-text="postsError ? 'Probeer opnieuw' : 'Laad meer'"></span>
+          </button>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <p>Gemaakt met liefde voor de bollen van oma.</p>
+    </div>
+  </footer>
+
+  <div class="modal" id="delen" x-show="formOpen" x-cloak @click.self="closeForm()" @keydown.tab="trapTab($event)">
+    <div class="modal-dialog" x-ref="dialog" role="dialog" aria-modal="true" aria-labelledby="delen-kop">
+      <div class="modal-head">
+        <h2 id="delen-kop" tabindex="-1" x-ref="dialogTitle">Deel jouw bloembol</h2>
+        <button type="button" class="modal-close" aria-label="Sluiten" @click="closeForm()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <form class="modal-body" @submit.prevent="submit()" novalidate autocomplete="on">
+        <div class="field">
+          <label for="naam">1. Jouw naam</label>
+          <input id="naam" type="text" name="name" maxlength="60" autocomplete="name"
+                 x-model="form.name" x-ref="name"
+                 :aria-invalid="errors.name ? 'true' : 'false'" aria-describedby="naam-fout">
+          <p class="error" id="naam-fout" x-show="errors.name" x-text="errors.name" role="alert"></p>
+        </div>
+
+        <div class="field">
+          <span class="label" id="foto-label">2. Jouw foto</span>
+          <label class="btn btn-light file-btn" for="foto">
+            <span x-text="file ? 'Andere foto kiezen' : 'Kies of maak een foto'"></span>
+          </label>
+          <input id="foto" class="file-input" type="file" name="photo" accept="image/*"
+                 x-ref="photo" @change="onFile($event)"
+                 aria-describedby="foto-fout foto-info">
+          <div class="preview" x-show="file" x-cloak id="foto-info">
+            <img x-show="previewUrl && !previewFailed" :src="previewUrl" alt="Voorbeeld van de gekozen foto"
+                 @error="previewFailed = true">
+            <p x-show="previewFailed" class="muted">
+              Je foto is gekozen, maar we kunnen hier geen voorbeeld laten zien.
+            </p>
+            <p class="muted" x-text="file ? file.name : ''"></p>
+          </div>
+          <p class="error" id="foto-fout" x-show="errors.photo" x-text="errors.photo" role="alert"></p>
+        </div>
+
+        <div class="field">
+          <label for="tekst">3. Een korte tekst <span class="muted">(mag leeg blijven)</span></label>
+          <textarea id="tekst" name="message" rows="3" maxlength="500" x-model="form.message"
+                    placeholder="Bijvoorbeeld: Eindelijk geplant!"></textarea>
+          <p class="counter muted" x-text="form.message.length + ' van 500 tekens'"></p>
+        </div>
+
+        <fieldset class="field">
+          <legend>4. Waar staat je bol?</legend>
+          <button type="button" class="btn btn-light" @click="useLocation()" :disabled="geoBusy">
+            <span x-text="geoBusy ? 'Even zoeken…' : 'Gebruik mijn locatie'"></span>
+          </button>
+          <p class="notice" :class="locMessageKind" x-show="locMessage" x-text="locMessage" role="status"></p>
+          <p class="or">Of tik hieronder op de kaart op de plek van je bol. Je kunt de speld daarna verslepen.</p>
+          <div id="kies-kaart" class="map map-pick" x-ref="pickMap" role="application"
+               aria-label="Kaart van Nederland om de plek van je bol aan te tikken"></div>
+          <p class="chosen" :class="{ 'chosen-ok': loc }" aria-live="polite"
+             x-text="loc ? 'Gekozen plek: ' + loc.lat.toFixed(2) + ', ' + loc.lon.toFixed(2) + (loc.source === 'gps' ? ' (via je telefoon)' : ' (zelf aangetikt)') : 'Je hebt nog geen plek gekozen.'"></p>
+          <p class="muted small">Je precieze adres blijft privé: de plek wordt afgerond, zodat alleen de buurt te zien is.</p>
+          <p class="error" x-show="errors.loc" x-text="errors.loc" role="alert"></p>
+        </fieldset>
+
+        <div class="hp" aria-hidden="true">
+          <label for="website">Laat dit veld leeg</label>
+          <input id="website" type="text" name="website" tabindex="-1" autocomplete="off" x-model="form.website">
+        </div>
+
+        <div class="submit-area">
+          <button type="submit" class="btn btn-big" :disabled="submitting">
+            <span x-text="submitting ? 'Bezig met versturen…' : 'Verstuur mijn foto'"></span>
+          </button>
+          <div x-show="submitting" x-cloak class="progress-wrap" role="status">
+            <progress max="100" :value="progress"></progress>
+            <p class="muted" x-text="progress >= 100 ? 'Even geduld, we verwerken je foto…' : 'Foto versturen: ' + progress + '%'"></p>
+          </div>
+          <p class="error error-big" x-ref="submitError" x-show="submitError" x-text="submitError" role="alert"></p>
+          <p class="error error-big" x-show="hasErrors" x-cloak role="alert">
+            Er ontbreekt nog iets. Kijk bij de rode tekst hierboven.
+          </p>
+          <button type="button" class="btn btn-light btn-cancel" @click="closeForm()" :disabled="submitting">Annuleren</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="lightbox" x-show="lightbox" x-cloak role="dialog" aria-modal="true" aria-label="Foto groot bekijken"
+       @click.self="closeLightbox()">
+    <div class="lightbox-inner" x-show="lightbox">
+      <img :src="lightbox ? lightbox.photo_url : ''" :alt="lightbox ? 'Foto van ' + lightbox.name : ''">
+      <div class="lightbox-text">
+        <h3 x-text="lightbox ? lightbox.name : ''"></h3>
+        <p class="muted" x-text="lightbox ? formatDate(lightbox.created_at) : ''"></p>
+        <p x-show="lightbox && lightbox.message" x-text="lightbox ? lightbox.message : ''"></p>
+        <button type="button" class="btn btn-light" @click="lightbox && focusOnMap(lightbox.id)">Toon op de kaart</button>
+      </div>
+      <div class="lightbox-bar">
+        <button type="button" class="btn lightbox-close" x-ref="lightboxClose" @click="closeLightbox()">Sluiten</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
