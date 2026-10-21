@@ -5,9 +5,15 @@ poort 8000 en bewaart alle blijvende gegevens in `/data`.
 
 ## Starten
 
+Het `docker-compose.yml` gebruikt de image `ghcr.io/donixon/bloembollen-site:latest`
+en kan los van de repository worden gekopieerd:
+
 ```bash
-ADMIN_TOKEN='kies-een-lang-geheim' docker compose up --build
+docker compose pull
+ADMIN_TOKEN='kies-een-lang-geheim' docker compose up -d
 ```
+
+Zelf bouwen vanuit de broncode kan met `docker build -t bloembollen-site .`.
 
 Open daarna `http://localhost:8000`. De gezondheidscontrole staat op
 `http://localhost:8000/api/health`.

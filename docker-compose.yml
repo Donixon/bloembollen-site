@@ -1,6 +1,6 @@
 services:
   app:
-    build: .
+    image: ghcr.io/donixon/bloembollen-site:latest
     ports:
       - "8000:8000"
     environment:
