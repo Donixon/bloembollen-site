@@ -383,7 +383,13 @@ progress { width: 100%; height: 1.25rem; accent-color: var(--tulip); }
   font-size: 1.5rem;
   color: var(--leaf-800);
 }
-.leaflet-bar, .leaflet-touch .leaflet-bar { border: 0; border-radius: var(--radius-sm); box-shadow: var(--shadow); overflow: hidden; }
+.leaflet-bar, .leaflet-touch .leaflet-bar { border: 0; border-radius: var(--radius-sm); box-shadow: var(--shadow); }
+.leaflet-touch .leaflet-bar a:first-child,
+.leaflet-bar a:first-child { border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+.leaflet-touch .leaflet-bar a:last-child,
+.leaflet-bar a:last-child { border-radius: 0 0 var(--radius-sm) var(--radius-sm); }
+.leaflet-touch .leaflet-bar a:only-child,
+.leaflet-bar a:only-child { border-radius: var(--radius-sm); }
 .leaflet-container { font: inherit; font-size: .9rem; }
 .leaflet-container a { color: var(--tulip-dark); }
 .leaflet-control-attribution { font-size: .8rem; }
