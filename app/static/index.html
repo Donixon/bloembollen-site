@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#1e4d2b">
+  <meta name="theme-color" content="#173f26">
   <title>De bollen van oma – bloembollen op de kaart</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%B7%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
@@ -20,13 +20,16 @@
   <header class="topbar">
     <div class="wrap topbar-in">
       <div class="topbar-text">
+        <p class="eyebrow">Bloembollen op de kaart</p>
         <h1>De bollen van oma</h1>
-        <p class="tagline">Foto’s van bollen door heel Nederland</p>
+        <p class="tagline">Foto’s van bollen door heel Nederland, van tulp tot narcis.</p>
       </div>
       <button type="button" class="btn btn-big btn-share" x-ref="opener" aria-haspopup="dialog" @click="openForm()">
+        <svg class="btn-icon" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
         Deel jouw bloembol
       </button>
     </div>
+    <div class="fields" aria-hidden="true"></div>
   </header>
 
   <main>
@@ -48,7 +51,7 @@
           </p>
         </div>
 
-        <p class="muted map-hint" x-show="!mapError" x-text="mapCount === 0 && mapLoaded ? 'Er staan nog geen plekken op de kaart.' : 'Tik op een speld om de foto te zien.'"></p>
+        <p class="map-hint" x-show="!mapError" x-text="mapCount === 0 && mapLoaded ? 'Er staan nog geen plekken op de kaart.' : 'Tik op een speld om de foto te zien.'"></p>
         <p class="notice error-box" x-show="mapError" x-cloak>
           <span x-text="mapError"></span>
           <button type="button" class="btn btn-light" @click="loadMap()">Probeer opnieuw</button>
@@ -60,7 +63,10 @@
 
     <section id="galerij" class="section" aria-labelledby="galerij-kop">
       <div class="wrap">
-        <h2 id="galerij-kop">Alle foto's</h2>
+        <div class="section-head">
+          <h2 id="galerij-kop">Alle foto's</h2>
+          <p class="muted" x-show="posts.length > 0" x-cloak x-text="posts.length + (nextBeforeId !== null ? '+' : '') + ' foto\u2019s'"></p>
+        </div>
 
         <p class="empty" x-show="postsLoaded && posts.length === 0 && !postsError" x-cloak>
           Nog geen foto's — wees de eerste!
@@ -98,6 +104,7 @@
   </main>
 
   <footer class="footer">
+    <div class="fields fields-foot" aria-hidden="true"></div>
     <div class="wrap">
       <p>Gemaakt met liefde voor de bollen van oma.</p>
     </div>
@@ -114,7 +121,7 @@
 
       <form class="modal-body" @submit.prevent="submit()" novalidate autocomplete="on">
         <div class="field">
-          <label for="naam">1. Jouw naam</label>
+          <label for="naam"><span class="step" aria-hidden="true">1</span>Jouw naam</label>
           <input id="naam" type="text" name="name" maxlength="60" autocomplete="name"
                  x-model="form.name" x-ref="name"
                  :aria-invalid="errors.name ? 'true' : 'false'" aria-describedby="naam-fout">
@@ -122,7 +129,7 @@
         </div>
 
         <div class="field">
-          <span class="label" id="foto-label">2. Jouw foto</span>
+          <span class="label" id="foto-label"><span class="step" aria-hidden="true">2</span>Jouw foto</span>
           <label class="btn btn-light file-btn" for="foto">
             <span x-text="file ? 'Andere foto kiezen' : 'Kies of maak een foto'"></span>
           </label>
@@ -141,14 +148,14 @@
         </div>
 
         <div class="field">
-          <label for="tekst">3. Een korte tekst <span class="muted">(mag leeg blijven)</span></label>
+          <label for="tekst"><span class="step" aria-hidden="true">3</span>Een korte tekst <span class="muted">(mag leeg blijven)</span></label>
           <textarea id="tekst" name="message" rows="3" maxlength="500" x-model="form.message"
                     placeholder="Bijvoorbeeld: Eindelijk geplant!"></textarea>
           <p class="counter muted" x-text="form.message.length + ' van 500 tekens'"></p>
         </div>
 
         <fieldset class="field">
-          <legend>4. Waar staat je bol?</legend>
+          <legend><span class="step" aria-hidden="true">4</span>Waar staat je bol?</legend>
           <button type="button" class="btn btn-light" @click="useLocation()" :disabled="geoBusy">
             <span x-text="geoBusy ? 'Even zoeken…' : 'Gebruik mijn locatie'"></span>
           </button>
